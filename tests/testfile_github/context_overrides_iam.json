@@ -3,17 +3,34 @@
   "pipeline_user_aws_secret_access_key_variable_name": "AWS_SECRET_ACCESS_KEY",
   "main_git_branch": "main",
   "sam_template": "template.yaml",
-  "testing_stack_name": "test-stack",
-  "testing_pipeline_execution_role": "test-pipeline-execution-role",
-  "testing_cloudformation_execution_role": "test-cfn-execution-role",
-  "testing_artifacts_bucket": "test-bucket",
-  "testing_image_repository": "test-ecr",
-  "testing_region": "us-east-2",
+
+  "develop_stack_name": "dev-stack",
+  "develop_pipeline_execution_role": "dev-pipeline-execution-role",
+  "develop_cloudformation_execution_role": "dev-cfn-execution-role",
+  "develop_artifacts_bucket": "dev-bucket",
+  "develop_image_repository": "dev-ecr",
+  "develop_region": "eu-central-1",
+
+  "testing_stack_name": "tst-stack",
+  "testing_pipeline_execution_role": "tst-pipeline-execution-role",
+  "testing_cloudformation_execution_role": "tst-cfn-execution-role",
+  "testing_artifacts_bucket": "tst-bucket",
+  "testing_image_repository": "tst-ecr",
+  "testing_region": "eu-central-1",
+
+  "staging_stack_name": "stg-stack",
+  "staging_pipeline_execution_role": "stg-pipeline-execution-role",
+  "staging_cloudformation_execution_role": "stg-cfn-execution-role",
+  "staging_artifacts_bucket": "stg-bucket",
+  "staging_image_repository": "stg-ecr",
+  "staging_region": "eu-central-1",
+
   "prod_stack_name": "prod-stack",
   "prod_pipeline_execution_role": "prod-pipeline-execution-role",
   "prod_cloudformation_execution_role": "prod-cfn-execution-role",
   "prod_artifacts_bucket": "prod-bucket",
   "prod_image_repository": "prod-ecr",
-  "prod_region": "us-west-2",
+  "prod_region": "eu-central-1",
+
   "permissions_provider": "AWS IAM"
 }

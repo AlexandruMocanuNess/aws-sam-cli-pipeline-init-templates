@@ -4,27 +4,41 @@ on:
   push:
     branches:
       - 'main'
-      - 'feature**'
-  delete:
-    branches:
-      - 'feature**'
+      - 'develop'
+      - 'qa'
+      - 'staging'
 
 env:
   PIPELINE_USER_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   PIPELINE_USER_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   SAM_TEMPLATE: template.yaml
-  TESTING_STACK_NAME: test-stack
-  TESTING_PIPELINE_EXECUTION_ROLE: test-pipeline-execution-role
-  TESTING_CLOUDFORMATION_EXECUTION_ROLE: test-cfn-execution-role
-  TESTING_ARTIFACTS_BUCKET: test-bucket
-  TESTING_IMAGE_REPOSITORY: test-ecr
-  TESTING_REGION: us-east-2
+  DEVELOP_STACK_NAME: dev-stack
+  DEVELOP_PIPELINE_EXECUTION_ROLE: dev-pipeline-execution-role
+  DEVELOP_CLOUDFORMATION_EXECUTION_ROLE: dev-cfn-execution-role
+  DEVELOP_ARTIFACTS_BUCKET: dev-bucket
+  DEVELOP_IMAGE_REPOSITORY: dev-ecr
+  DEVELOP_REGION: eu-central-1
+
+  TESTING_STACK_NAME: tst-stack
+  TESTING_PIPELINE_EXECUTION_ROLE: tst-pipeline-execution-role
+  TESTING_CLOUDFORMATION_EXECUTION_ROLE: tst-cfn-execution-role
+  TESTING_ARTIFACTS_BUCKET: tst-bucket
+  TESTING_IMAGE_REPOSITORY: tst-ecr
+  TESTING_REGION: eu-central-1
+
+  STAGING_STACK_NAME: stg-stack
+  STAGING_PIPELINE_EXECUTION_ROLE: stg-pipeline-execution-role
+  STAGING_CLOUDFORMATION_EXECUTION_ROLE: stg-cfn-execution-role
+  STAGING_ARTIFACTS_BUCKET: stg-bucket
+  STAGING_IMAGE_REPOSITORY: stg-ecr
+  STAGING_REGION: eu-central-1
+
   PROD_STACK_NAME: prod-stack
   PROD_PIPELINE_EXECUTION_ROLE: prod-pipeline-execution-role
   PROD_CLOUDFORMATION_EXECUTION_ROLE: prod-cfn-execution-role
   PROD_ARTIFACTS_BUCKET: prod-bucket
   PROD_IMAGE_REPOSITORY: prod-ecr
-  PROD_REGION: us-west-2
+  PROD_REGION: eu-central-1
 
 jobs:
   test:
@@ -34,72 +48,6 @@ jobs:
       - uses: actions/checkout@v3
       - run: |
           # trigger the tests here
-
-  delete-feature:
-    if: startsWith(github.event.ref, 'feature') && github.event_name == 'delete'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: aws-actions/setup-sam@v2
-        with:
-          use-installer: true
-
-      - name: Assume the testing pipeline user role
-        uses: aws-actions/configure-aws-credentials@v1-node16
-        with:
-          aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.TESTING_REGION }}
-          role-to-assume: ${{ env.TESTING_PIPELINE_EXECUTION_ROLE }}
-          role-session-name: testing-packaging
-          role-duration-seconds: 3600
-          role-skip-session-tagging: true
-
-      - name: Delete feature branch stack
-        env:
-          FEATURE_BRANCH_NAME: ${{ github.event.ref }}
-        run: |
-          sam delete \
-            --stack-name $(echo ${FEATURE_BRANCH_NAME##*/} | tr -cd '[a-zA-Z0-9-]') \
-            --region ${TESTING_REGION} \
-            --no-prompts
-
-  build-and-deploy-feature:
-    # this stage is triggered only for feature branches (feature*),
-    # which will build the stack and deploy to a stack named with branch name.
-    # https://github.com/actions/setup-python
-    # https://github.com/aws-actions/configure-aws-credentials#notice-node12-deprecation-warning
-    if: startsWith(github.ref, 'refs/heads/feature')
-    needs: [test]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: aws-actions/setup-sam@v2
-        with:
-          use-installer: true
-      - run: sam build --template ${SAM_TEMPLATE} --use-container
-
-      - name: Assume the testing pipeline user role
-        uses: aws-actions/configure-aws-credentials@v1-node16
-        with:
-          aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.TESTING_REGION }}
-          role-to-assume: ${{ env.TESTING_PIPELINE_EXECUTION_ROLE }}
-          role-session-name: feature-deployment
-          role-duration-seconds: 3600
-          role-skip-session-tagging: true
-
-      - name: Deploy to feature stack in the testing account
-        shell: bash
-        run: |
-          sam deploy --stack-name $(echo ${GITHUB_REF##*/} | tr -cd '[a-zA-Z0-9-]') \
-            --capabilities CAPABILITY_IAM \
-            --region ${TESTING_REGION} \
-            --s3-bucket ${TESTING_ARTIFACTS_BUCKET} \
-            --image-repository ${TESTING_IMAGE_REPOSITORY} \
-            --no-fail-on-empty-changeset \
-            --role-arn ${TESTING_CLOUDFORMATION_EXECUTION_ROLE}
 
   build-and-package:
     if: github.ref == 'refs/heads/main'
@@ -113,6 +61,30 @@ jobs:
 
       - name: Build resources
         run: sam build --template ${SAM_TEMPLATE} --use-container
+
+      - name: Assume the develop pipeline user role
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.DEVELOP_REGION }}
+          role-to-assume: ${{ env.DEVELOP_PIPELINE_EXECUTION_ROLE }}
+          role-session-name: develop-packaging
+          role-duration-seconds: 3600
+          role-skip-session-tagging: true
+
+      - name: Upload artifacts to develop artifact buckets
+        run: |
+          sam package \
+            --s3-bucket ${DEVELOP_ARTIFACTS_BUCKET} \
+            --image-repository ${DEVELOP_IMAGE_REPOSITORY} \
+            --region ${DEVELOP_REGION} \
+            --output-template-file packaged-develop.yaml
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: packaged-develop.yaml
+          path: packaged-develop.yaml
 
       - name: Assume the testing pipeline user role
         uses: aws-actions/configure-aws-credentials@v1-node16
@@ -137,6 +109,30 @@ jobs:
         with:
           name: packaged-testing.yaml
           path: packaged-testing.yaml
+
+      - name: Assume the testing pipeline user role
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-access-key-id: ${{ env.PIPELINE_USER_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.PIPELINE_USER_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.STAGING_REGION }}
+          role-to-assume: ${{ env.STAGING_PIPELINE_EXECUTION_ROLE }}
+          role-session-name: staging-packaging
+          role-duration-seconds: 3600
+          role-skip-session-tagging: true
+
+      - name: Upload artifacts to staging artifact buckets
+        run: |
+          sam package \
+            --s3-bucket ${STAGING_ARTIFACTS_BUCKET} \
+            --image-repository ${STAGING_IMAGE_REPOSITORY} \
+            --region ${STAGING_REGION} \
+            --output-template-file packaged-staging.yaml
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: packaged-staging.yaml
+          path: packaged-staging.yaml
 
       - name: Assume the prod pipeline user role
         uses: aws-actions/configure-aws-credentials@v1-node16
