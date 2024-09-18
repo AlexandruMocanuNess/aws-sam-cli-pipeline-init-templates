@@ -356,19 +356,19 @@ jobs:
           role-duration-seconds: 3600
           role-skip-session-tagging: true
 
-          - name: Deploy to testing account
-            run: |
-            sam deploy --stack-name ${STAGING_STACK_NAME} \
-              --template packaged-staging.yaml \
-              --capabilities CAPABILITY_IAM \
-              --region ${STAGING_REGION} \
-              --s3-bucket ${STAGING_ARTIFACTS_BUCKET} \
-              {%- if cookiecutter.staging_image_repository %}
-              --image-repository ${STAGING_IMAGE_REPOSITORY} \
-              {%- endif %}
-              --no-fail-on-empty-changeset \
-              --role-arn ${STAGING_CLOUDFORMATION_EXECUTION_ROLE}
-            
+      - name: Deploy to staging account
+          run: |
+          sam deploy --stack-name ${STAGING_STACK_NAME} \
+            --template packaged-staging.yaml \
+            --capabilities CAPABILITY_IAM \
+            --region ${STAGING_REGION} \
+            --s3-bucket ${STAGING_ARTIFACTS_BUCKET} \
+            {%- if cookiecutter.staging_image_repository %}
+            --image-repository ${STAGING_IMAGE_REPOSITORY} \
+            {%- endif %}
+            --no-fail-on-empty-changeset \
+            --role-arn ${STAGING_CLOUDFORMATION_EXECUTION_ROLE}
+    
   integration-test:
     if: github.ref == 'refs/heads/{{ cookiecutter.main_git_branch }}'
     needs: [build-and-package-production]
