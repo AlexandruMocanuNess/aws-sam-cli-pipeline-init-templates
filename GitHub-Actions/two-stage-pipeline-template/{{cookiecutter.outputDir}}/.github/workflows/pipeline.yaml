@@ -96,7 +96,7 @@ jobs:
       - uses: aws-actions/setup-sam@v2
         with:
           use-installer: true
-  
+
       - name: Build resources
         run: sam build --template ${SAM_TEMPLATE} --use-container
 
@@ -112,7 +112,7 @@ jobs:
           role-session-name: develop-packaging
           role-duration-seconds: 3600
           role-skip-session-tagging: true
-        
+
       - name: Upload artifacts to develop artifact buckets
         run: |
           sam package \
@@ -122,7 +122,7 @@ jobs:
             {%- endif %}
             --region ${DEVELOP_REGION} \
             --output-template-file packaged-develop.yaml
-        
+
       - uses: actions/upload-artifact@v3
         with:
           name: packaged-develop.yaml
@@ -179,7 +179,7 @@ jobs:
       - uses: aws-actions/setup-sam@v2
         with:
           use-installer: true
-  
+
       - name: Build resources
         run: sam build --template ${SAM_TEMPLATE} --use-container
 
@@ -195,7 +195,7 @@ jobs:
           role-session-name: staging-packaging
           role-duration-seconds: 3600
           role-skip-session-tagging: true
-        
+
       - name: Upload artifacts to staging artifact buckets
         run: |
           sam package \
@@ -205,7 +205,7 @@ jobs:
             {%- endif %}
             --region ${STAGING_REGION} \
             --output-template-file packaged-staging.yaml
-        
+
       - uses: actions/upload-artifact@v3
         with:
           name: packaged-staging.yaml
@@ -220,7 +220,7 @@ jobs:
       - uses: aws-actions/setup-sam@v2
         with:
           use-installer: true
-          
+
       - name: Build resources
         run: sam build --template ${SAM_TEMPLATE} --use-container
 
@@ -264,7 +264,7 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: packaged-develop.yaml
-        
+
       - name: Assume the develop pipeline user role
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
@@ -277,7 +277,7 @@ jobs:
           role-session-name: develop-deployment
           role-duration-seconds: 3600
           role-skip-session-tagging: true
-        
+
       - name: Deploy to develop account
         run: |
           sam deploy --stack-name ${DEVELOP_STACK_NAME} \
@@ -303,7 +303,7 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: packaged-testing.yaml
-        
+
       - name: Assume the testing pipeline user role
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
@@ -316,7 +316,7 @@ jobs:
           role-session-name: testing-deployment
           role-duration-seconds: 3600
           role-skip-session-tagging: true
-        
+
       - name: Deploy to testing account
         run: |
           sam deploy --stack-name ${TESTING_STACK_NAME} \
@@ -329,7 +329,7 @@ jobs:
             {%- endif %}
             --no-fail-on-empty-changeset \
             --role-arn ${TESTING_CLOUDFORMATION_EXECUTION_ROLE}
-  
+
   deploy-staging:
     if: github.ref == 'refs/heads/staging'
     needs: [build-and-package-staging]
@@ -342,7 +342,7 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: packaged-staging.yaml
-                  
+
       - name: Assume the staging pipeline user role
         uses: aws-actions/configure-aws-credentials@v1-node16
         with:
@@ -368,7 +368,7 @@ jobs:
             {%- endif %}
             --no-fail-on-empty-changeset \
             --role-arn ${STAGING_CLOUDFORMATION_EXECUTION_ROLE}
-    
+
   integration-test:
     if: github.ref == 'refs/heads/{{ cookiecutter.main_git_branch }}'
     needs: [build-and-package-production]
